@@ -16,13 +16,13 @@ void processImage(cv::Mat src)
         {
             result.at<uchar>(i, j) = src.at<uchar>(i, j) - temp.at<uchar >(i, j);
             if(result.at<uchar>(i, j) >= 230 ) result.at<uchar>(i, j) = 0;
-            if(result.at<uchar>(i, j) <= 10) result.at<uchar>(i, j) = 0;
+            if(result.at<uchar>(i, j) <= 20) result.at<uchar>(i, j) = 0;
         }
     }
 }
 
 int main() {
-    cv::VideoCapture videoCapture("videoplayback-3.mp4");
+    cv::VideoCapture videoCapture("outColor.avi");
     cv::Mat frame,detected_edges;
     if(!videoCapture.isOpened()) return -1;
     int lowThreshold = 20;
@@ -39,8 +39,8 @@ int main() {
         processImage(frame);
         temp = frame;
         cv::blur(result, result, cv::Size(3,3));
-        dilate( result, result, getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3)) );
-        erode(result, result, getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3)) );
+//        dilate( result, result, getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5, 5)) );
+//        erode(result, result, getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5, 5)) );
         cv::Canny(result, detected_edges, lowThreshold, lowThreshold*ratio, kernel_size);
         cv::findContours( detected_edges, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0) );
         cv::Mat draft= cv::Mat::zeros( detected_edges.size(), CV_8UC1 );
@@ -48,6 +48,7 @@ int main() {
         {
             cv::Rect boundingBox = boundingRect(contours[i]);
             if(boundingBox.area() < 500) continue;
+            cv::rectangle(draft, boundingBox, cv::Scalar(255,0,255), 40);
             cv::rectangle(draft, boundingBox, cv::Scalar(255,0,255), -1);
 //            std::cout << contours[i] << "\n";
 //            cv::rectangle(detected_edges,boundingBox.tl(), boundingBox.br(), cv::Scalar(255,255,255),-1);
@@ -55,12 +56,13 @@ int main() {
         cv::Canny(draft, detected_edges, lowThreshold, lowThreshold*ratio, kernel_size);
         cv::findContours( detected_edges, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0) );
 
-        cv::Mat drawing= cv::Mat::zeros( detected_edges.size(), CV_8UC1 );
+        cv::Mat drawing= frame.clone();
 
         for( int i = 0; i< contours.size(); i++ )
         {
             cv::Rect boundingBox = boundingRect(contours[i]);
-            if(boundingBox.area() < 10000) continue;
+            if (boundingBox.tl().y < 150) continue;
+            if(boundingBox.area() < 2000) continue;
             cv::rectangle(drawing, boundingBox, cv::Scalar(255,0,255), 2);
 //            std::cout << contours[i] << "\n";
 //            cv::rectangle(detected_edges,boundingBox.tl(), boundingBox.br(), cv::Scalar(255,255,255),-1);
@@ -68,7 +70,7 @@ int main() {
 
         cv::imshow("origin", frame);
         cv::imshow("test",result);
-        cv::imshow("edge", drawing);
+        cv::imshow("resultr", drawing);
         // video.write(result);
         char key = cv::waitKey(30);
         if(key == 27) break;
